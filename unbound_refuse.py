@@ -72,12 +72,12 @@ def main():
             else:
                 blacklist = parse_file(args.blacklist_file)
 
+        blacklist = list(set(blacklist))
+
         if whitelist:
             for domain in blacklist:
                 if domain in whitelist:
                     blacklist.remove(domain)
-
-        blacklist = list(set(blacklist))
 
         logging.info('blacklisting {} domains'.format(len(blacklist)))
 

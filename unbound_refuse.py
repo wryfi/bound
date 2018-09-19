@@ -57,7 +57,6 @@ def main():
         if args.whitelist_file:
             if whitelist:
                 whitelist += parse_file(args.whitelist_file)
-                whitelist = sorted(whitelist)
             else:
                 whitelist = parse_file(args.whitelist_file)
 
@@ -68,11 +67,10 @@ def main():
         if args.blacklist_file:
             if blacklist:
                 blacklist += parse_file(args.blacklist_file)
-                blacklist = sorted(blacklist)
             else:
                 blacklist = parse_file(args.blacklist_file)
 
-        blacklist = list(set(blacklist))
+        blacklist = sorted(list(set(blacklist)))
 
         if whitelist:
             for domain in blacklist:
@@ -118,7 +116,7 @@ def parse_lists(lists_directory):
     for file in os.listdir(lists_directory):
         file_domains = parse_file(os.path.join(lists_directory, file))
         domains += file_domains
-    return sorted(domains)
+    return domains
 
 
 def parse_file(filepath):

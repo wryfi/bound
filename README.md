@@ -1,7 +1,7 @@
-# unbound-refuse
+# bound
 
-The file `unbound_refuse.py` in this repo is a python script designed to
-pull data from [The Big Blocklist Collection](https://firebog.net/) and
+The file `bound.py` in this repo is a python script designed to pull
+data from [The Big Blocklist Collection](https://firebog.net/) and
 generate an [unbound](https://nlnetlabs.nl/projects/unbound/)
 configuration file that refuses lookup of the selected domains.
 
@@ -31,7 +31,7 @@ installer, [pi-hole](https://pi-hole.net/) is probably what you want.
 
 ## Installation
 
-Copy `unbound_refuse.py` to a sensible path on your system, e.g.
+Copy `bound.py` to a sensible path on your system, e.g.
 `/usr/local/bin`.
 
 
@@ -40,7 +40,7 @@ Copy `unbound_refuse.py` to a sensible path on your system, e.g.
 The script is intended to be used with blacklists from
 [The Big Blocklist Collection](https://firebog.net/).
 
-Run without any options, `unbound_refuse.py` will:
+Run without any options, `bound.py` will:
 
 1. download the latest "ticked" list from the Big Blocklist Collection
 1. download all of the blacklists listed in the "ticked" list
@@ -59,12 +59,12 @@ There are options that support running as a non-root user, as well
 as specifying the blacklist URL, an optional whitelist URL, and
 local blacklist and whitelist files.
 
-For a description of all the options, run `unbound_refuse.py -h`.
+For a description of all the options, run `bound.py -h`.
 
 
 ## Supported File Formats
 
-The `unbound_refuse.py` script supports blacklists and whitelists in the
+The `bound.py` script supports blacklists and whitelists in the
 following formats:
 
 ### one domain per line

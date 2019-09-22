@@ -11,8 +11,8 @@ import tempfile
 try:
     import requests
 except ImportError:
-    raise SystemExit('Please install the python requests library to use this script.')
-
+    raise SystemExit(
+        'Please install the python requests library to use this script.')
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,21 +24,27 @@ HOSTS_FORMAT = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\s+(.*)\s*.*')
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-B', '--blacklist-file', help='local blacklist file to parse')
-    parser.add_argument('-W', '--whitelist-file', help='local whitelist file to parse')
+    parser.add_argument('-B', '--blacklist-file',
+                        help='local blacklist file to parse')
+    parser.add_argument('-W', '--whitelist-file',
+                        help='local whitelist file to parse')
     parser.add_argument(
         '-b', '--blacklist-url',
         help='URL of blacklist URLs to parse (defaults to the "ticked" list from The Big Blocklist Collection)',
         default='https://v.firebog.net/hosts/lists.php?type=tick'
     )
-    parser.add_argument('-i', '--init', help='init system: systemd (default), upstart, or sysv', default='systemd')
-    parser.add_argument('-n', '--no-restart', help='do not restart unbound', action='store_true')
+    parser.add_argument('-i', '--init',
+                        help='init system: systemd (default), upstart, or sysv',
+                        default='systemd')
+    parser.add_argument('-n', '--no-restart', help='do not restart unbound',
+                        action='store_true')
     parser.add_argument(
         '-o', '--output',
         help='where to output processed list (/etc/unbound/unbound.conf.d/blacklist.conf)',
         default='/etc/unbound/unbound.conf.d/blacklist.conf'
     )
-    parser.add_argument('-w', '--whitelist-url', help='URL of whitelist URLs to parse')
+    parser.add_argument('-w', '--whitelist-url',
+                        help='URL of whitelist URLs to parse')
     args = parser.parse_args()
 
     whitelist = None
@@ -83,13 +89,15 @@ def main():
             os.remove(args.output)
         with open(args.output, 'a') as fileobj:
             for blacklisted in blacklist:
-                fileobj.write('local-zone: "{}" refuse'.format(blacklisted) + '\n')
+                fileobj.write(
+                    'local-zone: "{}" refuse'.format(blacklisted) + '\n')
 
         if not args.no_restart:
             restart_unbound(args.init)
 
     except Exception as ex:
-        raise SystemExit('There was an unhandled error running the script: {}'.format(ex))
+        raise SystemExit(
+            'There was an unhandled error running the script: {}'.format(ex))
     finally:
         shutil.rmtree(blacklist_dir)
         shutil.rmtree(whitelist_dir)
@@ -102,7 +110,8 @@ def get_lists_from_url(url, output_directory):
     except requests.exceptions.HTTPError as ex:
         raise SystemExit('Error fetching {}: {}'.format(url, ex))
     for url in response.content.decode().splitlines():
-        filename = os.path.join(output_directory, url.split('//')[1].replace('/', '_'))
+        filename = os.path.join(output_directory,
+                                url.split('//')[1].replace('/', '_'))
         try:
             response = requests.get(url)
         except requests.exceptions.HTTPError as ex:
@@ -124,7 +133,8 @@ def parse_file(filepath):
     with open(filepath, 'r') as fileobj:
         for line in fileobj:
             line = line.strip()
-            if not line or line.startswith('#') or line.startswith('<') or line.startswith('::'):
+            if not line or line.startswith('#') or line.startswith(
+                    '<') or line.startswith('::'):
                 continue
             if re.match(DOMAIN_PER_LINE_FORMAT, line):
                 domains.append(line)
@@ -153,7 +163,8 @@ def restart_unbound(init):
         try:
             subprocess.check_call(restart)
         except OSError as ex:
-            raise SystemExit('Error calling init: {}. Are you running as root?'.format(ex))
+            raise SystemExit(
+                'Error calling init: {}. Are you running as root?'.format(ex))
         except subprocess.CalledProcessError as ex:
             raise SystemExit('Error restarting unbound: {}'.format(ex))
 
@@ -162,7 +173,9 @@ def check_config():
     try:
         subprocess.check_call(['unbound-checkconf'])
     except OSError as ex:
-        raise SystemExit('Error calling unbound-checkconf: {}. Are you running as root?'.format(ex))
+        raise SystemExit(
+            'Error calling unbound-checkconf: {}. Are you running as root?'.format(
+                ex))
     except subprocess.CalledProcessError:
         raise SystemExit('Something is wrong with unbound configuration!')
     return True

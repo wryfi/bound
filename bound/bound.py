@@ -15,7 +15,16 @@ except ImportError:
         'Please install the python requests library to use this script.'
     )
 
-logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+console = logging.StreamHandler()
+console.setLevel(logging.DEBUG)
+console.setFormatter(
+    logging.Formatter('%(asctime)s :: %(name)s :: %(levelname)s :: %(message)s')
+)
+logger.addHandler(console)
+
 
 DIGIT_SPACE_DOMAIN_FORMAT = re.compile(r'^\d\s+[\w.-]+$')
 DOMAIN_LINE_COMMENT_FORMAT = re.compile(r'^[\w.-]+\s+#.*')
@@ -82,7 +91,7 @@ def configure_unbound(
             if domain in safelist:
                 blocklist.remove(domain)
 
-    logging.info('blocklisting {} domains'.format(len(blocklist)))
+    logger.info('blocklisting {} domains'.format(len(blocklist)))
 
     if os.path.isfile(output):
         os.remove(output)
@@ -131,9 +140,7 @@ def get_lists_from_url(url, output_directory):
 
 def parse_directory(directory):
     domains = []
-    logging.debug(directory)
     for file in os.listdir(directory):
-        logging.debug(os.path.join(directory, file))
         file_domains = parse_file(os.path.join(directory, file))
         domains += file_domains
     return domains
@@ -172,7 +179,7 @@ def restart_unbound(init):
     elif os.path.isfile('/etc/init.d/unbound'):
         restart = ['/etc/init.d/unbound', 'restart']
     else:
-        logging.error('No known init system found. Please restart unbound!')
+        logger.error('No known init system found. Please restart unbound!')
         return
     if check_config():
         try:

@@ -1,7 +1,7 @@
 import os
 from unittest import TestCase, main, mock
 
-import bound
+from bound import bound
 
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -14,7 +14,7 @@ class GenerateDomainList(TestCase):
 
     def test_input_url(self):
         tmpdir = os.path.join(HERE, 'test_data')
-        with mock.patch('bound.get_lists_from_url', return_value=None):
+        with mock.patch('bound.bound.get_lists_from_url', return_value=None):
             domains = bound.generate_domain_list(
                 'http://foo.bar.com', tmpdir=tmpdir, rmtmp=False
             )
@@ -38,7 +38,7 @@ class GenerateDomainList(TestCase):
     def test_input_combined(self):
         tmpdir = os.path.join(HERE, 'test_data')
         filepath = os.path.join(HERE, 'test_data', 'test_hosts_format_data')
-        with mock.patch('bound.get_lists_from_url', return_value=None):
+        with mock.patch('bound.bound.get_lists_from_url', return_value=None):
             domains = bound.generate_domain_list(
                 'http://foo.bar.com', filepath=filepath,
                 tmpdir=tmpdir, rmtmp=False

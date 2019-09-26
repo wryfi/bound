@@ -8,11 +8,11 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 
 
 class GenerateDomainList(TestCase):
-    def test_list_return(self):
+    def test_return_list(self):
         domain_list = bound.generate_domain_list()
         self.assertIsInstance(domain_list, list)
 
-    def test_url_input(self):
+    def test_input_url(self):
         tmpdir = os.path.join(HERE, 'test_data')
         with mock.patch('bound.get_lists_from_url', return_value=None):
             domains = bound.generate_domain_list(
@@ -25,7 +25,7 @@ class GenerateDomainList(TestCase):
             domains
         )
 
-    def test_file_input(self):
+    def test_input_file(self):
         filepath = os.path.join(HERE, 'test_data', 'test_hosts_format_data')
         domains = bound.generate_domain_list(filepath=filepath)
         self.assertIsInstance(domains, list)
@@ -35,7 +35,7 @@ class GenerateDomainList(TestCase):
             domains
         )
 
-    def test_combined_input(self):
+    def test_input_combined(self):
         tmpdir = os.path.join(HERE, 'test_data')
         filepath = os.path.join(HERE, 'test_data', 'test_hosts_format_data')
         with mock.patch('bound.get_lists_from_url', return_value=None):

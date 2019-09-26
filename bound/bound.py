@@ -98,8 +98,7 @@ def configure_unbound(
 
 def generate_domain_list(url=None, filepath=None, tmpdir=None, rmtmp=True):
     domains = []
-    if not tmpdir:
-        tmpdir = tempfile.mkdtemp()
+    tmpdir = tmpdir if tmpdir else tempfile.mkdtemp()
     try:
         if url:
             get_lists_from_url(url, tmpdir)

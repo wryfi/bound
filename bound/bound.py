@@ -26,14 +26,11 @@ HOSTS_FORMAT = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\s+(.*)\s*.*')
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-B', '--blacklist-file', help='local blacklist file to parse'
+        '-B', '--blocklist-file', help='local blocklist file to parse'
     )
     parser.add_argument(
-        '-W', '--whitelist-file', help='local whitelist file to parse'
-    )
-    parser.add_argument(
-        '-b', '--blacklist-url',
-        help='URL of blacklist URLs to parse (defaults to the "ticked" list from The Big Blocklist Collection)',
+        '-b', '--blocklist-url',
+        help='URL of blocklist URLs to parse (defaults to the "ticked" list from The Big Blocklist Collection)',
         default='https://v.firebog.net/hosts/lists.php?type=tick'
     )
     parser.add_argument(
@@ -41,74 +38,78 @@ def main():
         help='init system: systemd (default), upstart, or sysv',
         default='systemd'
     )
-    parser.add_argument('-n', '--no-restart', help='do not restart unbound',
-                        action='store_true')
     parser.add_argument(
-        '-o', '--output',
-        help='where to output processed list (/etc/unbound/unbound.conf.d/blacklist.conf)',
-        default='/etc/unbound/unbound.conf.d/blacklist.conf'
+        '-n', '--no-restart', help='do not restart unbound', action='store_true'
     )
     parser.add_argument(
-        '-w', '--whitelist-url', help='URL of whitelist URLs to parse'
+        '-o', '--output',
+        help='where to output processed list (/etc/unbound/unbound.conf.d/blocklist.conf)',
+        default='/etc/unbound/unbound.conf.d/blocklist.conf'
+    )
+    parser.add_argument(
+        '-S', '--safelist-file', help='local safelist file to parse'
+    )
+    parser.add_argument(
+        '-s', '--safelist-url', help='URL of safelist URLs to parse'
     )
     args = parser.parse_args()
 
-    whitelist = None
-    blacklist = None
+    configure_unbound(
+        blocklist_file=args.blocklist_file,
+        blocklist_url=args.blocklist_url,
+        init=args.init,
+        output=args.output,
+        restart=not args.no_restart,
+        safelist_file=args.safelist_file,
+        safelist_url=args.safelist_url
+    )
 
-    blacklist_dir = tempfile.mkdtemp()
-    logging.info('blacklist dir: {}'.format(blacklist_dir))
-    whitelist_dir = tempfile.mkdtemp()
-    logging.info('whitelist_dir: {}'.format(whitelist_dir))
 
+def configure_unbound(
+    blocklist_file=None,
+    blocklist_url='https://v.firebog.net/hosts/lists.php?type=tick',
+    init='systemd',
+    output='/etc/unbound/unbound.conf.d/blocklist.conf',
+    restart=True,
+    safelist_file=None,
+    safelist_url=None
+):
+    safelist = generate_domain_list(safelist_url, safelist_file)
+    blocklist = generate_domain_list(blocklist_url, blocklist_file)
+
+    if safelist:
+        for domain in blocklist:
+            if domain in safelist:
+                blocklist.remove(domain)
+
+    logging.info('blocklisting {} domains'.format(len(blocklist)))
+
+    if os.path.isfile(output):
+        os.remove(output)
+    with open(output, 'a') as fo:
+        for blocklisted in blocklist:
+            fo.write(
+                'local-zone: "{}" refuse'.format(blocklisted) + '\n'
+            )
+
+    if restart:
+        restart_unbound(init)
+
+
+def generate_domain_list(url=None, filepath=None, tmpdir=None, rmtmp=True):
+    domains = []
+    if not tmpdir:
+        tmpdir = tempfile.mkdtemp()
     try:
-        if args.whitelist_url:
-            get_lists_from_url(args.whitelist_url, whitelist_dir)
-            whitelist = parse_lists(whitelist_dir)
-
-        if args.whitelist_file:
-            if whitelist:
-                whitelist += parse_file(args.whitelist_file)
-            else:
-                whitelist = parse_file(args.whitelist_file)
-
-        if args.blacklist_url:
-            get_lists_from_url(args.blacklist_url, blacklist_dir)
-            blacklist = parse_lists(blacklist_dir)
-
-        if args.blacklist_file:
-            if blacklist:
-                blacklist += parse_file(args.blacklist_file)
-            else:
-                blacklist = parse_file(args.blacklist_file)
-
-        blacklist = sorted(list(set(blacklist)))
-
-        if whitelist:
-            for domain in blacklist:
-                if domain in whitelist:
-                    blacklist.remove(domain)
-
-        logging.info('blacklisting {} domains'.format(len(blacklist)))
-
-        if os.path.isfile(args.output):
-            os.remove(args.output)
-        with open(args.output, 'a') as fileobj:
-            for blacklisted in blacklist:
-                fileobj.write(
-                    'local-zone: "{}" refuse'.format(blacklisted) + '\n'
-                )
-
-        if not args.no_restart:
-            restart_unbound(args.init)
-
-    except Exception as ex:
-        raise SystemExit(
-            'There was an unhandled error running the script: {}'.format(ex)
-        )
+        if url:
+            get_lists_from_url(url, tmpdir)
+            domains = parse_directory(tmpdir)
+        if filepath:
+            domains += parse_file(filepath)
     finally:
-        shutil.rmtree(blacklist_dir)
-        shutil.rmtree(whitelist_dir)
+        if rmtmp:
+            shutil.rmtree(tmpdir)
+    return sorted(list(set(domains)))
 
 
 def get_lists_from_url(url, output_directory):
@@ -129,10 +130,12 @@ def get_lists_from_url(url, output_directory):
             file.write(response.content.decode('latin-1'))
 
 
-def parse_lists(lists_directory):
+def parse_directory(directory):
     domains = []
-    for file in os.listdir(lists_directory):
-        file_domains = parse_file(os.path.join(lists_directory, file))
+    logging.debug(directory)
+    for file in os.listdir(directory):
+        logging.debug(os.path.join(directory, file))
+        file_domains = parse_file(os.path.join(directory, file))
         domains += file_domains
     return domains
 
@@ -159,7 +162,6 @@ def parse_file(filepath):
                     domain = match.groups()[0]
                     if domain != 'localhost' and domain != 'broadcasthost':
                         domains.append(domain)
-    logging.info('{} {}'.format(filepath, len(domains)))
     return domains
 
 
@@ -168,8 +170,11 @@ def restart_unbound(init):
         restart = ['systemctl', 'restart', 'unbound']
     elif init == 'upstart':
         restart = ['service', 'unbound', 'restart']
-    else:
+    elif os.path.isfile('/etc/init.d/unbound'):
         restart = ['/etc/init.d/unbound', 'restart']
+    else:
+        logging.error('No known init system found. Please restart unbound!')
+        return
     if check_config():
         try:
             subprocess.check_call(restart)

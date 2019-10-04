@@ -1,7 +1,7 @@
 # bound
 
 `bound` pulls data from
-[The Big Blocklist Collection](https://firebog.net/) and generate an
+[The Big Blocklist Collection](https://firebog.net/) and generates an
 [unbound](https://nlnetlabs.nl/projects/unbound/) configuration file
 that refuses lookup of the selected domains.
 
@@ -51,7 +51,7 @@ unbound for blocking the listed domains
 1. check the unbound configuration, and exit in case of any errors
 1. restart unbound
 
-To accomplish the above, you will probably need to run the `bound` as
+To accomplish the above, you will probably need to run `bound` as
 the root user.
 
 There are options that support running as a non-root user, as well

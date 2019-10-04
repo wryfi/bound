@@ -90,14 +90,14 @@ def configure_unbound(
             if domain in safelist:
                 blocklist.remove(domain)
 
-    logger.info('blocklisting {} domains'.format(len(blocklist)))
+    logger.info(f'blocklisting {len(blocklist)} domains')
 
     if os.path.isfile(output):
         os.remove(output)
     with open(output, 'a') as fo:
         for blocklisted in blocklist:
             fo.write(
-                'local-zone: "{}" refuse'.format(blocklisted) + '\n'
+                f'local-zone: "{blocklisted}" refuse' + '\n'
             )
 
     if restart:
@@ -129,7 +129,7 @@ def extract_urls_from_url(source_url):
         response = requests.get(source_url)
         response.raise_for_status()
     except requests.exceptions.HTTPError as ex:
-        raise SystemExit('Error fetching {}: {}'.format(source_url, ex))
+        raise SystemExit(f'Error fetching {source_url}: {ex}')
     return response.content.decode().splitlines()
 
 
@@ -138,8 +138,8 @@ def download_files(urls, output_directory):
     for url in urls:
         try:
             response = requests.get(url)
-        except requests.exceptions.HTTPError as ex:
-            logger.error(f'Error fetching {url}: {ex}')
+        except Exception as ex:
+            logger.warning(f'Failed to fetch url: {ex}')
             continue
         filename = os.path.join(
             output_directory, str(uuid.uuid4())
@@ -182,7 +182,6 @@ def extract_domain(line):
             domain = match.groups()[0]
             if domain != 'localhost' and domain != 'broadcasthost':
                 return domain
-    return
 
 
 def restart_unbound(init):
@@ -200,10 +199,10 @@ def restart_unbound(init):
             subprocess.check_call(restart)
         except OSError as ex:
             raise SystemExit(
-                'Error calling init: {}. Are you running as root?'.format(ex)
+                f'Error calling init: {ex}. Are you running as root?'
             )
         except subprocess.CalledProcessError as ex:
-            raise SystemExit('Error restarting unbound: {}'.format(ex))
+            raise SystemExit(f'Error restarting unbound: {ex}')
 
 
 def check_config():
@@ -211,9 +210,7 @@ def check_config():
         subprocess.check_call(['unbound-checkconf'])
     except OSError as ex:
         raise SystemExit(
-            'Error calling unbound-checkconf: {}. Are you running as root?'.format(
-                ex
-            )
+            f'Error calling unbound-checkconf: {ex}. Are you running as root?'
         )
     except subprocess.CalledProcessError:
         raise SystemExit('Something is wrong with unbound configuration!')

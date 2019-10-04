@@ -1,9 +1,9 @@
 # bound
 
-The file `bound.py` in this repo is a python script designed to pull
-data from [The Big Blocklist Collection](https://firebog.net/) and
-generate an [unbound](https://nlnetlabs.nl/projects/unbound/)
-configuration file that refuses lookup of the selected domains.
+`bound` pulls data from
+[The Big Blocklist Collection](https://firebog.net/) and generates an
+[unbound](https://nlnetlabs.nl/projects/unbound/) configuration file
+that refuses lookup of the selected domains.
 
 This is useful for blocking ads and malware, in much the same way as
 [pi-hole](https://pi-hole.net/). You might prefer this method over
@@ -24,48 +24,46 @@ installer, [pi-hole](https://pi-hole.net/) is probably what you want.
 
 1. a gnu/linux or *bsd operating system
 1. a working unbound installation
-1. python3 (for debian-like systems: `sudo apt-get install python3`)
+3. python3.6+ (for debian-like systems: `sudo apt-get install python3`)
 1. python3 [requests](http://docs.python-requests.org/) library
 (for debian-like systems: `sudo apt-get install python3-requests`)
 
 
 ## Installation
 
-Copy `bound.py` to a sensible path on your system, e.g.
-`/usr/local/bin`.
+`python setup.py install`
 
 
 ## Usage
 
-The script is intended to be used with blacklists from
+`bound` is intended to be used with blocklists from
 [The Big Blocklist Collection](https://firebog.net/).
 
-Run without any options, `bound.py` will:
+Run without any options, `bound` will:
 
 1. download the latest "ticked" list from the Big Blocklist Collection
-1. download all of the blacklists listed in the "ticked" list
+1. download all of the blocklists listed in the "ticked" list
 1. parse, deduplicate, and assemble a list of domains from the retrieved
-blacklists
-1. remove any whitelisted domains from the list
-1. write `/etc/unbound/unbound.conf.d/blacklist.conf` to configure
+blocklists
+1. remove any safelisted domains from the list
+1. write `/etc/unbound/unbound.conf.d/blocklist.conf` to configure
 unbound for blocking the listed domains
 1. check the unbound configuration, and exit in case of any errors
 1. restart unbound
 
-To accomplish the above, you will probably need to run the script as
+To accomplish the above, you will probably need to run `bound` as
 the root user.
 
 There are options that support running as a non-root user, as well
-as specifying the blacklist URL, an optional whitelist URL, and
-local blacklist and whitelist files.
+as specifying the blocklist URL, an optional safelist URL, and
+local blocklist and safelist files.
 
-For a description of all the options, run `bound.py -h`.
+For a description of all the options, run `bound -h`.
 
 
 ## Supported File Formats
 
-The `bound.py` script supports blacklists and whitelists in the
-following formats:
+`bound` supports blocklists and safelists in the following formats:
 
 ### one domain per line
 ```

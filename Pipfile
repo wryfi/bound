@@ -8,7 +8,5 @@ requests = "*"
 
 [dev-packages]
 pbr = "*"
-
-[dev-packages.e1839a8]
-path = "."
-editable = true
+twine = "*"
+e1839a8 = {path = ".",editable = true}

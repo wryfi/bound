@@ -1,0 +1,18 @@
+CHANGES
+=======
+
+v1.0.0
+------
+
+* issue-2 issue-3 fixed some typos and updated code to use f-strings
+* issue-2 issue-3 update readme
+* issue-2 issue-3 wrap-up
+* issue-3 improve logging
+* issue-3 add PBR-based installer and pipenv; move tests
+* issue-3 early refactoring, issue-4 first round of tests
+* issue-3 restyle from pycharm
+* issue-3 create module and refactor line lengths
+* update gitignore and rename everything to bound; fixes #1
+* remove unncessary sorting
+* deduplicate blacklist before removing whitelist entries
+* initial commit

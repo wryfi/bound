@@ -1,147 +1,113 @@
-cfitall :: configure it all
-===========================
+bound
+=====
 
-cfitall (configure it all) is a configuration management library for
-python applications. It's inspired by and loosely modeled on the
-excellent `viper <https://github.com/spf13/viper>`__ library for go,
-though it doesn't have quite as many features (yet).
+``bound`` pulls data from `The Big Blocklist
+Collection <https://firebog.net/>`__ and generates an
+`unbound <https://nlnetlabs.nl/projects/unbound/>`__ configuration file
+that refuses lookup of the selected domains.
 
-It does cover the basics of configuring your application from a variety
-of sources, with a predictable inheritance hierarchy. It does this by
-creating a configuration registry for your application. When
-configuration data is accessed from the registry, these configuration
-sources are merged together:
+This is useful for blocking ads and malware, in much the same way as
+`pi-hole <https://pi-hole.net/>`__. You might prefer this method over
+pi-hole if:
 
--  default values provided by the developer
--  configuration file values (override defaults)
--  environment variables (override configuration file values & defaults)
--  ``set()`` calls made by the developer (override everything)
+-  you're already using unbound
+-  you don't love dnsmasq (which pi-hole is based on)
+-  you don't think a DNS resolver should require a web server
+-  you distrust thousands of lines of bash to make major changes to your
+   system
 
-This allows your application to support configuration by environment
-variable or using a variety of common text formats (currently json and
-yaml are supported).
+If the above don't apply to you, or you're looking for an opinionated,
+ad-blocking resolver with a pretty user interface and automated
+installer, `pi-hole <https://pi-hole.net/>`__ is probably what you want.
 
-Install
--------
+Requirements
+------------
 
-``pip install cfitall`` should do the trick for most users. cfitall
-requires python3 but otherwise has minimal dependencies.
+1. a gnu/linux or \*bsd operating system
+2. a working unbound installation
+3. python3.6+ (for debian-like systems:
+   ``sudo apt-get install python3``)
+4. python3 `requests <http://docs.python-requests.org/>`__ library (for
+   debian-like systems: ``sudo apt-get install python3-requests``)
 
-Example
--------
+Installation
+------------
 
-This example is for a contrived application called ``myapp``.
+``python setup.py install``
 
-First, set up a ``config`` module for myapp. Notice that we name our
-config object ``myapp``.
-
-::
-
-    # myapp/config.py
-
-    from cfitall.config import ConfigRegistry
-
-    # create a configuration registry for myapp
-    config = ConfigRegistry('myapp')
-
-    # set some default configuration values
-    config.set_default('global.name', 'my fancy application')
-    config.values['defaults']['global']['foo'] = 'bar'
-    config.set_default('network.listen', '127.0.0.1')
-
-    # add a path to search for configuration files
-    config.add_config_path('/Users/wryfi/.config/myapp')
-
-    # read data from first config file found (myapp.json, myapp.yaml, or myapp.yml)
-    config.read_config()
-
-Since we named our config object ``myapp``, environment variables
-beginning with ``MYAPP__`` are searched for values by cfitall.
-Environment variables containing commas are interpreted as
-comma-delimited lists. Export some environment variables to see this in
-action:
-
-::
-
-    export MYAPP__GLOBAL__NAME="my app from bash"
-    export MYAPP__GLOBAL__THINGS="four,five,six"
-    export MYAPP__NETWORK__PORT=8080
-
-Again, since we chose ``myapp`` as our config object name, our
-configuration file is also named ``myapp.(json|yaml|yml)``. Create a
-configuration file in YAML or JSON and put it in one of the paths you
-added to your config registry:
-
-::
-
-    # ~/.config/myapp/myapp.yml
-    global:
-      bar: foo
-      things:
-        - one
-        - two
-        - three
-      person:
-        name: joe
-        hair: brown
-    network:
-      port: 9000
-      listen: '*'
-
-Now you can use your config object to get the configuration data you
-need. You can access the merged configuration data by its configuration
-key (dotted path notation), or you can just grab the entire merged
-dictionary via the ``dict`` property.
-
-::
-
-    # myapp/logic.py
-
-    from config import config
-
-    # prints $MYAPP__GLOBAL__THINGS because env var overrides config file
-    print(config.get('global.things', list))
-
-    # prints $MYAPP__NETWORK__PORT because env var overrides config file
-    print(config.get('network.port', int))
-
-    # prints '*' from myapp.yml because config file overrides default
-    print(config.get('network.listen', str))
-
-    # prints 'joe' from myapp.yml because it is only defined there
-    print(config.get('global.person.name', str))
-
-    # alternate way to print joe through the config dict property
-    print(config.dict['global']['person']['name'])
-
-    # prints the entire assembled config as dictionary
-    print(config.dict)
-
-Running ``logic.py`` should go something like this:
-
-::
-
-    $ python logic.py
-    ['four', 'five', 'six']
-    8080
-    *
-    joe
-    joe
-    {'global': {'name': 'my app from bash', 'foo': 'bar', 'bar': 'foo', 'things': ['four', 'five', 'six'], 'person': {'name': 'joe', 'hair': 'brown'}}, 'network': {'listen': '*', 'port': '8080'}}
-
-Notes
+Usage
 -----
 
--  Avoid using ``__`` (double-underscore) in your configuration variable
-   keys (names), as cfitall uses ``__`` as a hierarchical delimiter when
-   parsing environment variables.
--  If you must use ``__`` in variable keys, you can pass an
-   ``env_separator`` argument with a different string to the
-   ConfigRegistry constructor, e.g.
-   ``config =     ConfigRegistry(env_separator='____')``.
--  Environment variables matching the pattern ``MYAPP__.*`` are
-   automatically read into the configuration, where ``MYAPP`` refers to
-   the uppercase ``name`` given to your ConfigRegistry at creation.
--  You can customize this behavior by passing an ``env_prefix`` value
-   and/or ``env_separator`` as kwargs to the ConfigRegistry constructor.
+``bound`` is intended to be used with blocklists from `The Big Blocklist
+Collection <https://firebog.net/>`__.
+
+Run without any options, ``bound`` will:
+
+1. download the latest "ticked" list from the Big Blocklist Collection
+2. download all of the blocklists listed in the "ticked" list
+3. parse, deduplicate, and assemble a list of domains from the retrieved
+   blocklists
+4. remove any safelisted domains from the list
+5. write ``/etc/unbound/unbound.conf.d/blocklist.conf`` to configure
+   unbound for blocking the listed domains
+6. check the unbound configuration, and exit in case of any errors
+7. restart unbound
+
+To accomplish the above, you will probably need to run ``bound`` as the
+root user.
+
+There are options that support running as a non-root user, as well as
+specifying the blocklist URL, an optional safelist URL, and local
+blocklist and safelist files.
+
+For a description of all the options, run ``bound -h``.
+
+Supported File Formats
+----------------------
+
+``bound`` supports blocklists and safelists in the following formats:
+
+one domain per line
+~~~~~~~~~~~~~~~~~~~
+
+::
+
+    advanbusiness.com
+    aoldaily.com
+    aolon1ine.com
+    applesoftupdate.com
+    arrowservice.net
+
+one domain per line, with inline comments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    quantummetric.com # Cydia/Bigboss
+    cydia.saurik.com.cdngc.net # Cydia/Bigboss
+    production-ultimate-assets.ratecity.com.au # NewsCorp
+    saber.srvcs.tumblr.com # Tumblr
+    fd-fp3.wg1.b.yahoo.com # Tumblr
+
+hosts file format
+~~~~~~~~~~~~~~~~~
+
+::
+
+    127.0.0.1  0koryu0.easter.ne.jp
+    127.0.0.1  109-204-26-16.netconnexion.managedbroadband.co.uk
+    127.0.0.1  1866809.securefastserver.com
+    127.0.0.1  2amsports.com
+    127.0.0.1  4dexports.com
+
+single-digit hosts file format
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    0 1app.blob.core.windows.net
+    0 2912a.v.fwmrm.net
+    0 29773.v.fwmrm.net
+    0 5be16.v.fwmrm.net
+    0 888casino.com
 

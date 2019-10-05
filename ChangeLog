@@ -4,6 +4,7 @@ CHANGES
 v1.0.0
 ------
 
+* minor packaging related updates
 * update LICENSE, ChangeLog, and AUTHORS
 * issue-2 issue-3 fixed some typos and updated code to use f-strings
 * issue-2 issue-3 update readme
